@@ -109,7 +109,7 @@ export default function App() {
       
       const ai = new GoogleGenAI({ apiKey });
       const chatOptions = {
-        model: "gemini-3-flash-preview",
+        model: "gemini-3.1-flash-lite-preview",
         config: {
           systemInstruction: SYSTEM_INSTRUCTION,
           temperature: 0.7,
