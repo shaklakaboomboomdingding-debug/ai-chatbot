@@ -4,7 +4,7 @@
  */
 
 import { useState, useRef, useEffect } from "react";
-import { GoogleGenAI, ThinkingLevel } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 import ReactMarkdown from "react-markdown";
 
 type Message = {
@@ -112,8 +112,7 @@ export default function App() {
         model: "gemini-3.1-flash-lite-preview",
         config: {
           systemInstruction: SYSTEM_INSTRUCTION,
-          temperature: 0.6,
-          thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL }
+          temperature: 0.7,
         }
       };
       
