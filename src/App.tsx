@@ -4,7 +4,7 @@
  */
 
 import { useState, useRef, useEffect } from "react";
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, ThinkingLevel } from "@google/genai";
 import ReactMarkdown from "react-markdown";
 
 type Message = {
@@ -112,7 +112,8 @@ export default function App() {
         model: "gemini-3.1-flash-lite-preview",
         config: {
           systemInstruction: SYSTEM_INSTRUCTION,
-          temperature: 0.7,
+          temperature: 0.6,
+          thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL }
         }
       };
       
@@ -157,6 +158,8 @@ export default function App() {
       ]);
       
       let fullText = "";
+      let lastRenderTime = 0;
+      
       for await (const chunk of responseStream) {
         fullText += chunk.text || "";
         
@@ -169,12 +172,26 @@ export default function App() {
           }
         }
         
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === modelMessageId ? { ...msg, text: displayText } : msg
-          )
-        );
+        // Optimize React rendering: Only update the UI every ~40ms to prevent main thread blocking (jank)
+        const now = Date.now();
+        if (now - lastRenderTime > 40) {
+           setMessages((prev) =>
+             prev.map((msg) =>
+               msg.id === modelMessageId ? { ...msg, text: displayText } : msg
+             )
+           );
+           lastRenderTime = now;
+        }
       }
+      
+      // Final flush to ensure the last chunk is rendered
+      let finalDisplayText = fullText.replace(/\[TRIGGER_BOOKING\]/g, "");
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === modelMessageId ? { ...msg, text: finalDisplayText } : msg
+        )
+      );
+      
     } catch (error) {
       console.error("Error sending message:", error);
       setMessages((prev) => [
