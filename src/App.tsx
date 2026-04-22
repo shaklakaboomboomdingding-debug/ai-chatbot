@@ -101,7 +101,7 @@ export default function App() {
   // Init Gemini Chat Session
   useEffect(() => {
     try {
-      const apiKey = process.env.GEMINI_API_KEY;
+      const apiKey = process.env.GEMINI_API_KEY || (import.meta as any).env?.VITE_GEMINI_API_KEY;
       if (!apiKey) {
         console.error("GEMINI_API_KEY is not defined");
         return;
@@ -109,7 +109,7 @@ export default function App() {
       
       const ai = new GoogleGenAI({ apiKey });
       const chatOptions = {
-        model: "gemini-3.1-flash-lite-preview",
+        model: "gemini-flash-latest",
         config: {
           systemInstruction: SYSTEM_INSTRUCTION,
           temperature: 0.7,
@@ -157,8 +157,6 @@ export default function App() {
       ]);
       
       let fullText = "";
-      let lastRenderTime = 0;
-      
       for await (const chunk of responseStream) {
         fullText += chunk.text || "";
         
@@ -171,34 +169,22 @@ export default function App() {
           }
         }
         
-        // Optimize React rendering: Only update the UI every ~40ms to prevent main thread blocking (jank)
-        const now = Date.now();
-        if (now - lastRenderTime > 40) {
-           setMessages((prev) =>
-             prev.map((msg) =>
-               msg.id === modelMessageId ? { ...msg, text: displayText } : msg
-             )
-           );
-           lastRenderTime = now;
-        }
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === modelMessageId ? { ...msg, text: displayText } : msg
+          )
+        );
       }
       
-      // Final flush to ensure the last chunk is rendered
-      let finalDisplayText = fullText.replace(/\[TRIGGER_BOOKING\]/g, "");
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === modelMessageId ? { ...msg, text: finalDisplayText } : msg
-        )
-      );
-      
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error sending message:", error);
+      const errorMessage = error?.message || String(error);
       setMessages((prev) => [
         ...prev,
         {
           id: Date.now().toString(),
           role: "model",
-          text: "I'm sorry, I'm having trouble connecting right now. Please call us at 9090063232 🌿",
+          text: `I'm sorry, I'm having trouble connecting right now. (Error: ${errorMessage}). Please call us at 9090063232 🌿`,
         },
       ]);
     } finally {
